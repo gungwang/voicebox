@@ -1,3 +1,9 @@
+# 重大福利：支持 Intel Arc A770 及其它 GPU
+## 仅支持开发者模式运行：
+`just setup`
+`just dev`
+
+
 # Voicebox Work Summary - 2026-04-28
 
 ## Goal
@@ -261,3 +267,5 @@ Expected fields:
 - There is no separate `just dev --xpu` or IPEX launch flag. The correct path is the normal `just dev` flow.
 - Current local modifications are in `README.Wang.md`, `backend/app.py`, `backend/backends/base.py`, `backend/routes/health.py`, and `justfile`.
 - No commit was created in this session; this summary describes the current local diff and the validated runtime behavior.
+
+C:\AI\intel-ai\voicebox\tauri\src-tauri\target\release\bundle\msi
