@@ -1,5 +1,5 @@
-# 重大福利：支持 Intel Arc A770 及其它 GPU |Ｓｕｐｐｏｒｔ　Intel Arc A770　ＧＰＵ
-## 仅支持开发者模式运行：｜　ｒｕｎ　ｄｅｖ　ｍｏｄｅ　ｏｎｌｙ
+# 重大福利：支持 Intel Arc A770 及其它 GPU |　Support Intel Arc A770 & other GPU
+## 仅支持开发者模式运行 ｜　Run DEV mode only
 - `just setup`
 - `just dev`
 
