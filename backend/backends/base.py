@@ -103,11 +103,9 @@ def get_torch_device(
 
     if allow_xpu:
         try:
-            import intel_extension_for_pytorch  # noqa: F401
-
             if hasattr(torch, "xpu") and torch.xpu.is_available():
                 return "xpu"
-        except ImportError:
+        except Exception:
             pass
 
     if allow_directml:
