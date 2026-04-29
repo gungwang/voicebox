@@ -23,7 +23,7 @@ Thank you for your interest in contributing to Voicebox! This document provides 
   python --version  # Should be 3.11 or higher
   ```
 
-- **[Rust](https://rustup.rs)** - For Tauri desktop app (installed automatically by Tauri CLI)
+- **[Rust](https://rustup.rs)** - For the Tauri desktop app (install separately with `rustup`)
   ```bash
   rustc --version  # Check if installed
   ```
@@ -33,7 +33,7 @@ Thank you for your interest in contributing to Voicebox! This document provides 
 
 ### Development Setup
 
-Install [just](https://github.com/casey/just) (`brew install just`, `cargo install just`, or `winget install Casey.Just`), then:
+Install [just](https://github.com/casey/just) (`brew install just`, `cargo install just`, or `winget install Casey.Just` on Windows), then:
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/voicebox.git
@@ -68,6 +68,14 @@ just --list        # see all available commands
 #### Windows Notes
 
 The justfile works natively on Windows via PowerShell. No WSL or Git Bash required. On Windows with an NVIDIA GPU, `just setup` automatically installs CUDA-enabled PyTorch for GPU acceleration.
+
+Install Rust before running `just dev` or `just build`:
+
+```powershell
+winget install -e --id Rustlang.Rustup
+```
+
+Restart PowerShell after installation so `cargo.exe` and `rustc.exe` are on `PATH`.
 
 ### Model Downloads
 

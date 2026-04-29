@@ -79,12 +79,10 @@ setup-python:
     } elseif ($hasIntelArc) { \
         Write-Host "Intel Arc GPU detected — installing PyTorch with XPU support..."; \
         & "{{ pip }}" install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/xpu; \
-        & "{{ pip }}" install intel-extension-for-pytorch --index-url https://download.pytorch.org/whl/xpu; \
     } else { \
         Write-Host "No NVIDIA or Intel Arc GPU detected — using CPU-only PyTorch."; \
         Write-Host "If you have an Intel Arc GPU, install XPU support manually:"; \
         Write-Host "  pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/xpu"; \
-        Write-Host "  pip install intel-extension-for-pytorch --index-url https://download.pytorch.org/whl/xpu"; \
     }
     & "{{ pip }}" install -r {{ backend_dir }}/requirements.txt
     & "{{ pip }}" install --no-deps chatterbox-tts
@@ -101,7 +99,7 @@ setup-js:
 
 # Start backend (if not already running) + frontend for development
 [unix]
-dev: _ensure-venv _ensure-sidecar
+dev: _ensure-venv _ensure-rust _ensure-sidecar
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -121,7 +119,7 @@ dev: _ensure-venv _ensure-sidecar
     cd {{ tauri_dir }} && bun run tauri dev
 
 [windows]
-dev: _ensure-venv _ensure-sidecar
+dev: _ensure-venv _ensure-rust _ensure-bun _ensure-sidecar
     $backendJob = $null; \
     try { $null = Invoke-WebRequest -Uri "http://127.0.0.1:17493/health" -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop; Write-Host "Backend already running on http://localhost:17493" } catch { \
         Write-Host "Starting backend on http://localhost:17493 ..."; \
@@ -129,7 +127,14 @@ dev: _ensure-venv _ensure-sidecar
         Start-Sleep -Seconds 2; \
     }; \
     Write-Host "Starting Tauri desktop app..."; \
-    try { Set-Location "{{ tauri_dir }}"; bun run tauri dev } finally { if ($backendJob) { taskkill /PID $backendJob.Id /T /F 2>$null | Out-Null } }
+    try { \
+        $cargoBin = Join-Path $env:USERPROFILE ".cargo\\bin"; \
+        $bunBin = Join-Path $env:USERPROFILE ".bun\\bin"; \
+        if (Test-Path (Join-Path $cargoBin "cargo.exe")) { $env:PATH = "$cargoBin;$env:PATH" }; \
+        if (Test-Path (Join-Path $bunBin "bun.exe")) { $env:PATH = "$bunBin;$env:PATH" }; \
+        Set-Location "{{ tauri_dir }}"; \
+        bun run tauri dev \
+    } finally { if ($backendJob) { taskkill /PID $backendJob.Id /T /F 2>$null | Out-Null } }
 
 # Start backend only
 [unix]
@@ -142,11 +147,15 @@ dev-backend: _ensure-venv
 
 # Start Tauri desktop app only (backend must be running separately)
 [unix]
-dev-frontend: _ensure-sidecar
+dev-frontend: _ensure-rust _ensure-sidecar
     cd {{ tauri_dir }} && bun run tauri dev
 
 [windows]
-dev-frontend: _ensure-sidecar
+dev-frontend: _ensure-rust _ensure-bun _ensure-sidecar
+    $cargoBin = Join-Path $env:USERPROFILE ".cargo\\bin"; \
+    $bunBin = Join-Path $env:USERPROFILE ".bun\\bin"; \
+    if (Test-Path (Join-Path $cargoBin "cargo.exe")) { $env:PATH = "$cargoBin;$env:PATH" }; \
+    if (Test-Path (Join-Path $bunBin "bun.exe")) { $env:PATH = "$bunBin;$env:PATH" }; \
     Set-Location "{{ tauri_dir }}"; bun run tauri dev
 
 # Start backend (if not already running) + web app (no Tauri)
@@ -178,7 +187,12 @@ dev-web: _ensure-venv
         Start-Sleep -Seconds 2; \
     }; \
     Write-Host "Starting web app..."; \
-    try { Set-Location "{{ web_dir }}"; bun run dev } finally { if ($backendJob) { taskkill /PID $backendJob.Id /T /F 2>$null | Out-Null } }
+    try { \
+        $bunBin = Join-Path $env:USERPROFILE ".bun\\bin"; \
+        if (Test-Path (Join-Path $bunBin "bun.exe")) { $env:PATH = "$bunBin;$env:PATH" }; \
+        Set-Location "{{ web_dir }}"; \
+        bun run dev \
+    } finally { if ($backendJob) { taskkill /PID $backendJob.Id /T /F 2>$null | Out-Null } }
 
 # Kill all dev processes
 [unix]
@@ -203,8 +217,10 @@ build-server: _ensure-venv
     PATH="{{ venv_bin }}:$PATH" ./scripts/build-server.sh
 
 [windows]
-build-server: _ensure-venv
+build-server: _ensure-venv _ensure-rust
     $ErrorActionPreference = "Stop"; \
+    $cargoBin = Join-Path $env:USERPROFILE ".cargo\\bin"; \
+    if (Test-Path (Join-Path $cargoBin "cargo.exe")) { $env:PATH = "$cargoBin;$env:PATH" }; \
     $env:PATH = "{{ venv_bin }};$env:PATH"; \
     & "{{ python }}" backend/build_binary.py; \
     if ($LASTEXITCODE -ne 0) { throw "build_binary.py failed with exit code $LASTEXITCODE" }; \
@@ -215,8 +231,10 @@ build-server: _ensure-venv
 
 # Build CUDA server binary and place in app data dir for local testing
 [windows]
-build-server-cuda: _ensure-venv
+build-server-cuda: _ensure-venv _ensure-rust
     $ErrorActionPreference = "Stop"; \
+    $cargoBin = Join-Path $env:USERPROFILE ".cargo\\bin"; \
+    if (Test-Path (Join-Path $cargoBin "cargo.exe")) { $env:PATH = "$cargoBin;$env:PATH" }; \
     $env:PATH = "{{ venv_bin }};$env:PATH"; \
     & "{{ python }}" backend/build_binary.py --cuda; \
     if ($LASTEXITCODE -ne 0) { throw "build_binary.py --cuda failed with exit code $LASTEXITCODE" }; \
@@ -232,11 +250,13 @@ build-local: build-server build-server-cuda build-tauri
 
 # Build Tauri desktop app
 [unix]
-build-tauri:
+build-tauri: _ensure-rust
     cd {{ tauri_dir }} && bun run tauri build
 
 [windows]
-build-tauri:
+build-tauri: _ensure-rust
+    $cargoBin = Join-Path $env:USERPROFILE ".cargo\\bin"; \
+    if (Test-Path (Join-Path $cargoBin "cargo.exe")) { $env:PATH = "$cargoBin;$env:PATH" }; \
     Set-Location "{{ tauri_dir }}"; bun run tauri build
 
 # Build web app
@@ -413,7 +433,44 @@ _ensure-venv:
 _ensure-venv:
     if (-not (Test-Path "{{ venv }}")) { Write-Host "Python venv not found. Run: just setup"; exit 1 }
 
+[private, unix]
+_ensure-rust:
+    #!/usr/bin/env bash
+    if ! command -v cargo >/dev/null 2>&1 || ! command -v rustc >/dev/null 2>&1; then
+        echo "Rust/Cargo not found. Install Rust from https://rustup.rs and restart your shell."
+        exit 1
+    fi
+
+[private, windows]
+_ensure-rust:
+    $cargoBin = Join-Path $env:USERPROFILE ".cargo\\bin"; \
+    $cargoExe = Join-Path $cargoBin "cargo.exe"; \
+    $rustcExe = Join-Path $cargoBin "rustc.exe"; \
+    $hasPathTools = (Get-Command cargo -ErrorAction SilentlyContinue) -and (Get-Command rustc -ErrorAction SilentlyContinue); \
+    $hasRustupTools = (Test-Path $cargoExe) -and (Test-Path $rustcExe); \
+    if (-not $hasPathTools -and -not $hasRustupTools) { \
+        Write-Host "Rust/Cargo not found. Install rustup: winget install -e --id Rustlang.Rustup"; \
+        Write-Host "Restart your shell after installation so cargo.exe is on PATH."; \
+        exit 1; \
+    }
+
+[private, windows]
+_ensure-bun:
+    $bunBin = Join-Path $env:USERPROFILE ".bun\\bin"; \
+    $bunExe = Join-Path $bunBin "bun.exe"; \
+    $hasPathTool = Get-Command bun -ErrorAction SilentlyContinue; \
+    if (-not $hasPathTool -and -not (Test-Path $bunExe)) { \
+        Write-Host "Bun not found. Install Bun from https://bun.sh and reopen your terminal."; \
+        exit 1; \
+    }
+
 # Ensure Tauri dev sidecar placeholder exists
-[private]
+[private, unix]
 _ensure-sidecar:
+    bun run setup:dev
+
+[private, windows]
+_ensure-sidecar: _ensure-bun
+    $bunBin = Join-Path $env:USERPROFILE ".bun\\bin"; \
+    if (Test-Path (Join-Path $bunBin "bun.exe")) { $env:PATH = "$bunBin;$env:PATH" }; \
     bun run setup:dev
