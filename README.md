@@ -1,3 +1,8 @@
+# 重大福利：支持 Intel Arc A770 及其它 GPU |Ｓｕｐｐｏｒｔ　Intel Arc A770　ＧＰＵ
+## 仅支持开发者模式运行：｜　ｒｕｎ　ｄｅｖ　ｍｏｄｅ　ｏｎｌｙ
+- `just setup`
+- `just dev`
+
 <p align="center">
   <img src=".github/assets/icon-dark.webp" alt="Voicebox" width="120" height="120" />
 </p>

@@ -1,7 +1,7 @@
-# 重大福利：支持 Intel Arc A770 及其它 GPU
-## 仅支持开发者模式运行：
-`just setup`
-`just dev`
+# 重大福利：支持 Intel Arc A770 及其它 GPU |　Ｓｕｐｐｏｒｔ　Intel Arc A770　ＧＰＵ
+## 仅支持开发者模式运行：｜　ｒｕｎ　ｄｅｖ　ｍｏｄｅ　ｏｎｌｙ
+- `just setup`
+- `just dev`
 
 
 # Voicebox Work Summary - 2026-04-28
